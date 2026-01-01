@@ -1,0 +1,119 @@
+╔═══════════════════════════════════════════════════════════════╗
+║          PANDUAN CEPAT DEPLOY - BUMDESa Finance              ║
+╚═══════════════════════════════════════════════════════════════╝
+
+📋 CHECKLIST DEPLOYMENT (5-10 MENIT)
+
+□ Step 1: Download semua file project
+□ Step 2: Buat repository GitHub (Public)
+□ Step 3: Edit vite.config.js (ganti nama repo)
+□ Step 4: Install dependencies
+□ Step 5: Push ke GitHub
+□ Step 6: Deploy ke GitHub Pages
+□ Step 7: Aktifkan Pages di Settings
+□ Step 8: Akses aplikasi online!
+
+═══════════════════════════════════════════════════════════════
+
+🚀 LANGKAH DETAIL
+
+1️⃣  PERSIAPAN LOKAL
+
+   Buka terminal/command prompt di folder project, lalu:
+
+   npm install
+
+2️⃣  BUAT REPO GITHUB
+
+   • Buka: https://github.com/new
+   • Nama repo: bumdes-finance (atau terserah Anda)
+   • PENTING: Pilih "Public"
+   • Klik "Create repository"
+
+3️⃣  EDIT KONFIGURASI
+
+   Buka file: vite.config.js
+   
+   Ganti baris ini:
+   base: '/bumdes-finance/',
+   
+   Dengan nama repo Anda (huruf kecil, pakai tanda -)
+   Contoh: base: '/keuangan-desa/',
+
+4️⃣  PUSH KE GITHUB
+
+   git init
+   git add .
+   git commit -m "Initial commit"
+   git remote add origin https://github.com/USERNAME/REPO-NAME.git
+   git branch -M main
+   git push -u origin main
+
+   Ganti USERNAME dan REPO-NAME dengan milik Anda!
+
+5️⃣  DEPLOY
+
+   npm run deploy
+
+   Tunggu sampai selesai (biasanya 30-60 detik)
+
+6️⃣  AKTIFKAN GITHUB PAGES
+
+   • Buka repo di GitHub
+   • Settings → Pages (sidebar kiri)
+   • Source: Deploy from a branch
+   • Branch: gh-pages, folder: / (root)
+   • Save
+
+7️⃣  AKSES ONLINE
+
+   URL: https://USERNAME.github.io/REPO-NAME/
+   
+   Contoh:
+   https://budi123.github.io/bumdes-finance/
+
+   Tunggu 1-2 menit pertama kali.
+
+═══════════════════════════════════════════════════════════════
+
+🔐 LOGIN DEFAULT
+
+   Direktur:
+   - Username: admin
+   - Password: direktur123
+
+   Bendahara:
+   - Username: bendahara
+   - Password: bendahara123
+
+═══════════════════════════════════════════════════════════════
+
+🔄 UPDATE SETELAH EDIT
+
+   Setiap ada perubahan kode:
+
+   git add .
+   git commit -m "Perubahan X"
+   git push
+   npm run deploy
+
+═══════════════════════════════════════════════════════════════
+
+❗ TROUBLESHOOTING
+
+   Problem: Halaman 404
+   Fix: Periksa 'base' di vite.config.js sama dengan nama repo
+
+   Problem: CSS hilang
+   Fix: Clear cache browser (Ctrl+Shift+R atau Cmd+Shift+R)
+
+   Problem: npm command not found
+   Fix: Install Node.js dari https://nodejs.org
+
+═══════════════════════════════════════════════════════════════
+
+📞 BUTUH BANTUAN?
+
+   Baca README.md untuk dokumentasi lengkap!
+
+═══════════════════════════════════════════════════════════════
