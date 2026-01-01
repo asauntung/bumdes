@@ -18,7 +18,7 @@ const PublicView = () => {
       if (savedData) {
         setTransactions(JSON.parse(savedData));
       }
-    }, 30000); // 30 detik
+    }, 43200000); // 12 jam
 
     return () => clearInterval(interval);
   }, []);
