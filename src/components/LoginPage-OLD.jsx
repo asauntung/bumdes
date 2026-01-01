@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
-import { Wallet, Lock, User, AlertCircle, Eye } from 'lucide-react';
+import { Wallet, Lock, User, AlertCircle } from 'lucide-react';
 
-const LoginPage = ({ onLogin, onShowPublic }) => {
+const LoginPage = ({ onLogin }) => {
   const [username, setUsername] = useState('');
   const [password, setPassword] = useState('');
   const [error, setError] = useState('');
@@ -97,31 +97,6 @@ const LoginPage = ({ onLogin, onShowPublic }) => {
             Login
           </button>
         </form>
-
-        {/* Tombol Lihat Laporan Publik */}
-        <div className="mt-6">
-          <div className="relative">
-            <div className="absolute inset-0 flex items-center">
-              <div className="w-full border-t border-slate-200"></div>
-            </div>
-            <div className="relative flex justify-center text-sm">
-              <span className="px-2 bg-white text-slate-500">atau</span>
-            </div>
-          </div>
-
-          <button
-            type="button"
-            onClick={onShowPublic}
-            className="mt-6 w-full bg-green-50 hover:bg-green-100 text-green-700 font-medium py-3 rounded-lg transition-colors border border-green-200 flex items-center justify-center gap-2"
-          >
-            <Eye size={18} />
-            Lihat Laporan Publik (Warga)
-          </button>
-          
-          <p className="mt-3 text-xs text-center text-slate-500">
-            Klik di atas untuk melihat laporan keuangan tanpa login
-          </p>
-        </div>
 
         {/* Demo Credentials */}
         <div className="mt-6 pt-6 border-t border-slate-200">

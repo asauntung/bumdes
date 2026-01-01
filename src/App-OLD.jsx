@@ -3,13 +3,11 @@ import LoginPage from './components/LoginPage';
 import Dashboard from './components/Dashboard';
 import PendingApproval from './components/PendingApproval';
 import BukuKasUmum from './components/BukuKasUmum';
-import PublicView from './components/PublicView';
-import { LogOut, Wallet, Eye } from 'lucide-react';
+import { LogOut, Wallet } from 'lucide-react';
 
 function App() {
   const [user, setUser] = useState(null);
   const [activeTab, setActiveTab] = useState('dashboard');
-  const [showPublicView, setShowPublicView] = useState(false);
 
   useEffect(() => {
     const savedUser = localStorage.getItem('bumdes_current_user');
@@ -21,7 +19,6 @@ function App() {
   const handleLogin = (userData) => {
     setUser(userData);
     localStorage.setItem('bumdes_current_user', JSON.stringify(userData));
-    setShowPublicView(false);
   };
 
   const handleLogout = () => {
@@ -29,43 +26,13 @@ function App() {
       setUser(null);
       localStorage.removeItem('bumdes_current_user');
       setActiveTab('dashboard');
-      setShowPublicView(false);
     }
   };
 
-  const handleShowPublic = () => {
-    setShowPublicView(true);
-    setUser(null);
-  };
-
-  const handleBackToLogin = () => {
-    setShowPublicView(false);
-  };
-
-  // Tampilan Publik (untuk warga)
-  if (showPublicView) {
-    return (
-      <div>
-        <PublicView />
-        <div className="fixed bottom-8 right-8">
-          <button
-            onClick={handleBackToLogin}
-            className="bg-blue-600 hover:bg-blue-700 text-white px-6 py-3 rounded-full shadow-lg font-medium transition-all hover:shadow-xl flex items-center gap-2"
-          >
-            <Wallet size={20} />
-            Login Pengurus
-          </button>
-        </div>
-      </div>
-    );
-  }
-
-  // Halaman Login (dengan tombol lihat publik)
   if (!user) {
-    return <LoginPage onLogin={handleLogin} onShowPublic={handleShowPublic} />;
+    return <LoginPage onLogin={handleLogin} />;
   }
 
-  // Dashboard Pengurus (setelah login)
   return (
     <div className="min-h-screen bg-slate-50 font-sans text-slate-800 p-4 md:p-8">
       <div className="max-w-6xl mx-auto">
@@ -103,13 +70,6 @@ function App() {
               className={`px-4 py-2 rounded-lg text-sm font-medium transition-colors ${activeTab === 'report' ? 'bg-blue-600 text-white' : 'bg-slate-100 hover:bg-slate-200'}`}
             >
               Buku Kas Umum
-            </button>
-
-            <button 
-              onClick={handleShowPublic}
-              className="px-4 py-2 rounded-lg text-sm font-medium bg-green-100 hover:bg-green-200 text-green-700 transition-colors flex items-center gap-2"
-            >
-              <Eye size={16} /> Lihat Tampilan Publik
             </button>
 
             <button 
