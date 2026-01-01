@@ -21,19 +21,7 @@ Aplikasi manajemen keuangan BUMDESa dengan fitur authentication dan approval wor
 - Laporan lengkap dengan saldo berjalan
 - Export ke CSV/Excel
 - Hanya menampilkan transaksi approved
-
-## 📦 Akun Default
-
-```
-Direktur:
-- Username: admin
-- Password: direktur123
-
-Bendahara:
-- Username: bendahara  
-- Password: bendahara123
-```
-
+  
 ---
 
 ## 🚀 Deployment ke GitHub Pages
@@ -189,8 +177,8 @@ Edit `src/components/LoginPage.jsx`, cari bagian:
 
 ```jsx
 const users = [
-  { username: 'admin', password: 'direktur123', role: 'direktur', name: 'Direktur BUMDESa' },
-  { username: 'bendahara', password: 'bendahara123', role: 'bendahara', name: 'Bendahara BUMDESa' }
+  { username: 'admin', password: 'passwordDirektur', role: 'direktur', name: 'Direktur BUMDESa' },
+  { username: 'bendahara', password: 'passwordBendahara', role: 'bendahara', name: 'Bendahara BUMDESa' }
 ];
 ```
 
