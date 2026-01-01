@@ -8,8 +8,8 @@ const LoginPage = ({ onLogin, onShowPublic }) => {
 
   // Default users - bisa diubah sesuai kebutuhan
   const users = [
-    { username: 'admin', password: 'direktur123', role: 'direktur', name: 'Direktur BUMDESa' },
-    { username: 'bendahara', password: 'bendahara123', role: 'bendahara', name: 'Bendahara BUMDESa' }
+    { username: 'admin', password: 'dir121@', role: 'direktur', name: 'Direktur BUMDESa' },
+    { username: 'bendahara', password: 'bendum5758', role: 'bendahara', name: 'Bendahara BUMDESa' }
   ];
 
   const handleSubmit = (e) => {
@@ -121,19 +121,6 @@ const LoginPage = ({ onLogin, onShowPublic }) => {
           <p className="mt-3 text-xs text-center text-slate-500">
             Klik di atas untuk melihat laporan keuangan tanpa login
           </p>
-        </div>
-
-        {/* Demo Credentials */}
-        <div className="mt-6 pt-6 border-t border-slate-200">
-          <p className="text-xs text-slate-500 text-center mb-3">Akun Demo:</p>
-          <div className="space-y-2 text-xs">
-            <div className="bg-slate-50 p-2 rounded">
-              <span className="font-semibold">Direktur:</span> admin / direktur123
-            </div>
-            <div className="bg-slate-50 p-2 rounded">
-              <span className="font-semibold">Bendahara:</span> bendahara / bendahara123
-            </div>
-          </div>
         </div>
       </div>
     </div>
