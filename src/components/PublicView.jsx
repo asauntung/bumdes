@@ -100,8 +100,8 @@ const PublicView = () => {
           {/* Info Banner */}
           <div className="mt-6 bg-blue-50 border border-blue-200 rounded-lg p-4">
             <p className="text-sm text-blue-800">
-              <strong>Info:</strong> Halaman ini menampilkan data keuangan real-time BUMDESa. 
-              Data diperbarui otomatis setiap 30 detik. Hanya transaksi yang sudah disetujui yang ditampilkan.
+              <strong>Info:</strong> Halaman ini menampilkan data keuangan real-time BUMDESa Margajaya. 
+              Data diperbarui setiap 12 jam. Hanya transaksi yang sudah disetujui yang ditampilkan.
             </p>
           </div>
         </header>
@@ -267,7 +267,7 @@ const PublicView = () => {
         {/* Footer */}
         <div className="mt-8 text-center text-sm text-slate-500">
           <p>BUMDESa Margajaya - Sistem Keuangan Transparan</p>
-          <p className="mt-1">Data diperbarui otomatis setiap 12 Jam</p>
+          <p className="mt-1">Data diperbarui setiap 12 Jam</p>
         </div>
       </div>
     </div>
