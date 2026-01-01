@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { Plus, Minus, Trash2, TrendingUp, TrendingDown, FileText, Save, Clock } from 'lucide-react';
+import { supabase } from '../supabaseClient';
 
 const Dashboard = ({ user }) => {
   const [transactions, setTransactions] = useState([]);
@@ -8,6 +9,7 @@ const Dashboard = ({ user }) => {
   const [type, setType] = useState('expense');
   const [category, setCategory] = useState('Operasional');
   const [date, setDate] = useState(new Date().toISOString().split('T')[0]);
+  const [loading, setLoading] = useState(true);
 
   const categories = [
     "Modal Awal",
@@ -20,34 +22,39 @@ const Dashboard = ({ user }) => {
   ];
 
   useEffect(() => {
-    const savedData = localStorage.getItem('bumdes_transactions');
-    if (savedData) {
-      setTransactions(JSON.parse(savedData));
-    } else {
-      const initialData = [
-        { 
-          id: 1, 
-          date: '2025-01-01', 
-          description: 'Penerimaan Modal Desa (Ketahanan Pangan)', 
-          amount: 161511100, 
-          type: 'income', 
-          category: 'Modal Awal',
-          status: 'approved',
-          createdBy: 'admin',
-          approvedBy: 'admin',
-          createdAt: new Date().toISOString()
+    fetchTransactions();
+
+    const subscription = supabase
+      .channel('transactions')
+      .on('postgres_changes', 
+        { event: '*', schema: 'public', table: 'transactions' }, 
+        () => {
+          fetchTransactions();
         }
-      ];
-      setTransactions(initialData);
-      localStorage.setItem('bumdes_transactions', JSON.stringify(initialData));
-    }
+      )
+      .subscribe();
+
+    return () => {
+      subscription.unsubscribe();
+    };
   }, []);
 
-  useEffect(() => {
-    localStorage.setItem('bumdes_transactions', JSON.stringify(transactions));
-  }, [transactions]);
+  const fetchTransactions = async () => {
+    try {
+      const { data, error } = await supabase
+        .from('transactions')
+        .select('*')
+        .order('created_at', { ascending: false });
 
-  // Hanya hitung transaksi yang sudah approved
+      if (error) throw error;
+      setTransactions(data || []);
+    } catch (error) {
+      console.error('Error fetching transactions:', error);
+    } finally {
+      setLoading(false);
+    }
+  };
+
   const approvedTransactions = transactions.filter(t => t.status === 'approved');
   
   const totalIncome = approvedTransactions
@@ -60,40 +67,74 @@ const Dashboard = ({ user }) => {
 
   const currentBalance = totalIncome - totalExpense;
 
-  const handleAddTransaction = (e) => {
+  const handleAddTransaction = async (e) => {
     e.preventDefault();
-    if (!description || !amount) return;
+    if (!description || !amount) {
+      alert('Keterangan dan jumlah harus diisi!');
+      return;
+    }
 
+    // SUPER SIMPLE - minimal data
     const newTransaction = {
-      id: Date.now(),
-      date,
-      description,
-      amount: Number(amount),
-      type,
-      category,
-      status: user.role === 'direktur' ? 'approved' : 'pending', // Direktur langsung approved
-      createdBy: user.username,
-      approvedBy: user.role === 'direktur' ? user.username : null,
-      createdAt: new Date().toISOString()
+      date: date,
+      description: description,
+      amount: parseInt(amount),
+      type: type,
+      category: category,
+      status: user.role === 'direktur' ? 'approved' : 'pending',
+      created_by: user.username,
+      approved_by: user.role === 'direktur' ? user.username : null
     };
 
-    setTransactions([newTransaction, ...transactions]);
-    
-    setDescription('');
-    setAmount('');
+    console.log('🚀 Sending data:', newTransaction);
+    console.log('👤 User:', user);
+
+    try {
+      const { data, error } = await supabase
+        .from('transactions')
+        .insert([newTransaction])
+        .select();
+
+      if (error) {
+        console.error('❌ SUPABASE ERROR:', error);
+        alert('ERROR: ' + error.message);
+        return;
+      }
+
+      console.log('✅ SUCCESS:', data);
+      
+      setDescription('');
+      setAmount('');
+      
+      alert('✅ Transaksi berhasil disimpan!');
+      fetchTransactions();
+    } catch (error) {
+      console.error('❌ CATCH ERROR:', error);
+      alert('CATCH ERROR: ' + error.message);
+    }
   };
 
-  const handleDelete = (id) => {
+  const handleDelete = async (id) => {
     const transaction = transactions.find(t => t.id === id);
     
-    // Hanya bisa hapus transaksi sendiri atau jika direktur
-    if (transaction.createdBy !== user.username && user.role !== 'direktur') {
+    if (transaction.created_by !== user.username && user.role !== 'direktur') {
       alert('Anda hanya bisa menghapus transaksi yang Anda buat sendiri!');
       return;
     }
 
     if (confirm('Yakin ingin menghapus transaksi ini?')) {
-      setTransactions(transactions.filter(t => t.id !== id));
+      try {
+        const { error } = await supabase
+          .from('transactions')
+          .delete()
+          .eq('id', id);
+
+        if (error) throw error;
+        fetchTransactions();
+      } catch (error) {
+        console.error('Error deleting transaction:', error);
+        alert('Gagal menghapus transaksi.');
+      }
     }
   };
 
@@ -114,10 +155,20 @@ const Dashboard = ({ user }) => {
     </span>;
   };
 
-  // Filter transaksi untuk ditampilkan (hanya milik user atau semua jika direktur)
   const visibleTransactions = user.role === 'direktur' 
     ? transactions 
-    : transactions.filter(t => t.createdBy === user.username || t.status === 'approved');
+    : transactions.filter(t => t.created_by === user.username || t.status === 'approved');
+
+  if (loading) {
+    return (
+      <div className="flex items-center justify-center h-64">
+        <div className="text-center">
+          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600 mx-auto mb-4"></div>
+          <p className="text-slate-600">Memuat data...</p>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
@@ -129,12 +180,11 @@ const Dashboard = ({ user }) => {
           <h3 className={`text-2xl font-bold ${currentBalance < 0 ? 'text-red-600' : 'text-blue-600'}`}>
             {formatRupiah(currentBalance)}
           </h3>
-          <div className="mt-2 text-xs text-slate-400">Hanya transaksi yang disetujui</div>
         </div>
         
         <div className="bg-white p-6 rounded-xl shadow-sm border border-green-100 bg-green-50/50">
           <div className="flex items-center gap-2 mb-1">
-            <div className="p-1 bg-green-200 rounded-full"><TrendingUp size={14} className="text-green-700"/></div>
+            <TrendingUp size={14} className="text-green-700"/>
             <p className="text-green-800 text-sm font-medium">Total Pemasukan</p>
           </div>
           <h3 className="text-2xl font-bold text-green-700">{formatRupiah(totalIncome)}</h3>
@@ -142,7 +192,7 @@ const Dashboard = ({ user }) => {
 
         <div className="bg-white p-6 rounded-xl shadow-sm border border-red-100 bg-red-50/50">
           <div className="flex items-center gap-2 mb-1">
-            <div className="p-1 bg-red-200 rounded-full"><TrendingDown size={14} className="text-red-700"/></div>
+            <TrendingDown size={14} className="text-red-700"/>
             <p className="text-red-800 text-sm font-medium">Total Pengeluaran</p>
           </div>
           <h3 className="text-2xl font-bold text-red-700">{formatRupiah(totalExpense)}</h3>
@@ -283,7 +333,7 @@ const Dashboard = ({ user }) => {
                         {getStatusBadge(t.status)}
                       </td>
                       <td className="px-6 py-3 text-center">
-                        {(t.createdBy === user.username || user.role === 'direktur') && (
+                        {(t.created_by === user.username || user.role === 'direktur') && (
                           <button 
                             onClick={() => handleDelete(t.id)}
                             className="p-1 text-slate-400 hover:text-red-500 transition-colors"

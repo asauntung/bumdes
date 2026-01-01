@@ -1,43 +1,59 @@
 import React, { useState, useEffect } from 'react';
 import { TrendingUp, TrendingDown, Wallet, Calendar, PieChart, Eye } from 'lucide-react';
+import { supabase } from '../supabaseClient';
 
 const PublicView = () => {
   const [transactions, setTransactions] = useState([]);
+  const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    const savedData = localStorage.getItem('bumdes_transactions');
-    if (savedData) {
-      setTransactions(JSON.parse(savedData));
+    fetchTransactions();
+
+    // Subscribe to real-time updates
+    const subscription = supabase
+      .channel('public-transactions')
+      .on('postgres_changes', 
+        { event: '*', schema: 'public', table: 'transactions' }, 
+        () => {
+          fetchTransactions();
+        }
+      )
+      .subscribe();
+
+    return () => {
+      subscription.unsubscribe();
+    };
+  }, []);
+
+  const fetchTransactions = async () => {
+    try {
+      const { data, error } = await supabase
+        .from('transactions')
+        .select('*')
+        .eq('status', 'approved')
+        .order('created_at', { ascending: false });
+
+      if (error) throw error;
+      setTransactions(data || []);
+    } catch (error) {
+      console.error('Error fetching transactions:', error);
+    } finally {
+      setLoading(false);
     }
-  }, []);
+  };
 
-  // Refresh data setiap 12 Jam
-  useEffect(() => {
-    const interval = setInterval(() => {
-      const savedData = localStorage.getItem('bumdes_transactions');
-      if (savedData) {
-        setTransactions(JSON.parse(savedData));
-      }
-    }, 43200000); // 12 jam
-
-    return () => clearInterval(interval);
-  }, []);
-
-  // Hanya tampilkan transaksi approved
-  const approvedTransactions = transactions.filter(t => t.status === 'approved');
-
-  const totalIncome = approvedTransactions
+  const totalIncome = transactions
     .filter(t => t.type === 'income')
     .reduce((sum, t) => sum + Number(t.amount), 0);
 
-  const totalExpense = approvedTransactions
+  const totalExpense = transactions
     .filter(t => t.type === 'expense')
     .reduce((sum, t) => sum + Number(t.amount), 0);
 
   const currentBalance = totalIncome - totalExpense;
 
   // Statistik per kategori
-  const categoryStats = approvedTransactions.reduce((acc, t) => {
+  const categoryStats = transactions.reduce((acc, t) => {
     if (!acc[t.category]) {
       acc[t.category] = { income: 0, expense: 0 };
     }
@@ -61,6 +77,17 @@ const PublicView = () => {
     const options = { year: 'numeric', month: 'long', day: 'numeric' };
     return new Date(dateString).toLocaleDateString('id-ID', options);
   };
+
+  if (loading) {
+    return (
+      <div className="min-h-screen bg-gradient-to-br from-blue-50 to-slate-100 flex items-center justify-center">
+        <div className="text-center">
+          <div className="animate-spin rounded-full h-16 w-16 border-b-2 border-blue-600 mx-auto mb-4"></div>
+          <p className="text-slate-600 text-lg">Memuat data keuangan...</p>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-blue-50 to-slate-100 font-sans text-slate-800 p-4 md:p-8">
@@ -100,8 +127,8 @@ const PublicView = () => {
           {/* Info Banner */}
           <div className="mt-6 bg-blue-50 border border-blue-200 rounded-lg p-4">
             <p className="text-sm text-blue-800">
-              <strong>Info:</strong> Halaman ini menampilkan data keuangan real-time BUMDESa Margajaya. 
-              Data diperbarui setiap 12 jam. Hanya transaksi yang sudah disetujui yang ditampilkan.
+              <strong>Info:</strong> Halaman ini menampilkan data keuangan real-time BUMDESa. 
+              Data diperbarui otomatis setiap 12 jam. Hanya transaksi yang sudah disetujui yang ditampilkan.
             </p>
           </div>
         </header>
@@ -133,7 +160,7 @@ const PublicView = () => {
               </div>
             </div>
             <h3 className="text-3xl font-bold text-green-700">{formatRupiah(totalIncome)}</h3>
-            <div className="mt-3 text-xs text-green-600">{approvedTransactions.filter(t => t.type === 'income').length} transaksi</div>
+            <div className="mt-3 text-xs text-green-600">{transactions.filter(t => t.type === 'income').length} transaksi</div>
           </div>
 
           <div className="bg-white p-8 rounded-2xl shadow-lg border border-red-200 bg-gradient-to-br from-red-50 to-white">
@@ -146,7 +173,7 @@ const PublicView = () => {
               </div>
             </div>
             <h3 className="text-3xl font-bold text-red-700">{formatRupiah(totalExpense)}</h3>
-            <div className="mt-3 text-xs text-red-600">{approvedTransactions.filter(t => t.type === 'expense').length} transaksi</div>
+            <div className="mt-3 text-xs text-red-600">{transactions.filter(t => t.type === 'expense').length} transaksi</div>
           </div>
         </div>
 
@@ -207,27 +234,26 @@ const PublicView = () => {
                 </tr>
               </thead>
               <tbody className="divide-y divide-slate-100">
-                {approvedTransactions.length === 0 ? (
+                {transactions.length === 0 ? (
                   <tr>
                     <td colSpan={6} className="px-6 py-12 text-center text-slate-400 italic">
                       Belum ada transaksi yang tercatat.
                     </td>
                   </tr>
                 ) : (
-                  [...approvedTransactions]
-                    .sort((a, b) => new Date(b.date) - new Date(a.date) || b.id - a.id)
-                    .slice(0, 50) // Tampilkan 50 transaksi terakhir
-                    .reduce((acc, t, idx, arr) => {
-                      // Hitung saldo berjalan (terbalik karena diurutkan desc)
-                      const laterTransactions = arr.slice(idx + 1);
-                      const laterIncome = laterTransactions.filter(x => x.type === 'income').reduce((s, x) => s + x.amount, 0);
-                      const laterExpense = laterTransactions.filter(x => x.type === 'expense').reduce((s, x) => s + x.amount, 0);
-                      const runningBalance = currentBalance - (laterIncome - laterExpense);
+                  [...transactions]
+                    .sort((a, b) => new Date(a.date) - new Date(b.date) || a.id - b.id)
+                    .reduce((acc, t, idx) => {
+                      const prevBalance = idx === 0 ? 0 : acc[idx-1].runningBalance;
+                      const newBalance = t.type === 'income' 
+                        ? prevBalance + t.amount 
+                        : prevBalance - t.amount;
                       
-                      acc.push({...t, runningBalance});
+                      acc.push({...t, runningBalance: newBalance});
                       return acc;
                     }, [])
-                    .reverse() // Balik lagi biar newest on top
+                    .reverse()
+                    .slice(0, 50)
                     .map((t) => (
                       <tr key={t.id} className="hover:bg-slate-50 transition-colors">
                         <td className="px-6 py-4 whitespace-nowrap text-slate-600">
@@ -257,9 +283,9 @@ const PublicView = () => {
             </table>
           </div>
 
-          {approvedTransactions.length > 50 && (
+          {transactions.length > 50 && (
             <div className="p-6 bg-slate-50 border-t border-slate-200 text-center text-sm text-slate-500">
-              Menampilkan 50 transaksi terakhir dari total {approvedTransactions.length} transaksi
+              Menampilkan 50 transaksi terakhir dari total {transactions.length} transaksi
             </div>
           )}
         </div>
@@ -267,7 +293,7 @@ const PublicView = () => {
         {/* Footer */}
         <div className="mt-8 text-center text-sm text-slate-500">
           <p>BUMDESa Margajaya - Sistem Keuangan Transparan</p>
-          <p className="mt-1">Data diperbarui setiap 12 Jam</p>
+          <p className="mt-1">Data diperbarui otomatis setiap 12 jam</p>
         </div>
       </div>
     </div>

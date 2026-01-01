@@ -1,33 +1,81 @@
 import React, { useState, useEffect } from 'react';
 import { Check, X, Clock, AlertCircle } from 'lucide-react';
+import { supabase } from '../supabaseClient';
 
 const PendingApproval = ({ user }) => {
   const [transactions, setTransactions] = useState([]);
+  const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    const savedData = localStorage.getItem('bumdes_transactions');
-    if (savedData) {
-      setTransactions(JSON.parse(savedData));
-    }
+    fetchTransactions();
+
+    // Subscribe to real-time updates
+    const subscription = supabase
+      .channel('transactions')
+      .on('postgres_changes', 
+        { event: '*', schema: 'public', table: 'transactions' }, 
+        () => {
+          fetchTransactions();
+        }
+      )
+      .subscribe();
+
+    return () => {
+      subscription.unsubscribe();
+    };
   }, []);
 
-  useEffect(() => {
-    localStorage.setItem('bumdes_transactions', JSON.stringify(transactions));
-  }, [transactions]);
+  const fetchTransactions = async () => {
+    try {
+      const { data, error } = await supabase
+        .from('transactions')
+        .select('*')
+        .eq('status', 'pending')
+        .order('created_at', { ascending: false });
 
-  const pendingTransactions = transactions.filter(t => t.status === 'pending');
-
-  const handleApprove = (id) => {
-    setTransactions(transactions.map(t => 
-      t.id === id 
-        ? { ...t, status: 'approved', approvedBy: user.username, approvedAt: new Date().toISOString() }
-        : t
-    ));
+      if (error) throw error;
+      setTransactions(data || []);
+    } catch (error) {
+      console.error('Error fetching transactions:', error);
+    } finally {
+      setLoading(false);
+    }
   };
 
-  const handleReject = (id) => {
+  const handleApprove = async (id) => {
+    try {
+      const { error } = await supabase
+        .from('transactions')
+        .update({ 
+          status: 'approved', 
+          approved_by: user.username 
+        })
+        .eq('id', id);
+
+      if (error) throw error;
+      
+      alert('Transaksi disetujui!');
+    } catch (error) {
+      console.error('Error approving transaction:', error);
+      alert('Gagal menyetujui transaksi.');
+    }
+  };
+
+  const handleReject = async (id) => {
     if (confirm('Yakin ingin menolak transaksi ini? Data akan dihapus permanen.')) {
-      setTransactions(transactions.filter(t => t.id !== id));
+      try {
+        const { error } = await supabase
+          .from('transactions')
+          .delete()
+          .eq('id', id);
+
+        if (error) throw error;
+        
+        alert('Transaksi ditolak dan dihapus.');
+      } catch (error) {
+        console.error('Error rejecting transaction:', error);
+        alert('Gagal menolak transaksi.');
+      }
     }
   };
 
@@ -38,6 +86,17 @@ const PendingApproval = ({ user }) => {
       minimumFractionDigits: 0
     }).format(num);
   };
+
+  if (loading) {
+    return (
+      <div className="flex items-center justify-center h-64">
+        <div className="text-center">
+          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600 mx-auto mb-4"></div>
+          <p className="text-slate-600">Memuat data...</p>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="bg-white rounded-xl shadow-sm border border-slate-200 overflow-hidden">
@@ -52,11 +111,11 @@ const PendingApproval = ({ user }) => {
           </div>
         </div>
 
-        {pendingTransactions.length > 0 && (
+        {transactions.length > 0 && (
           <div className="mt-4 bg-orange-50 border border-orange-200 text-orange-700 px-4 py-3 rounded-lg flex items-start gap-2">
             <AlertCircle size={18} className="flex-shrink-0 mt-0.5" />
             <div className="text-sm">
-              <strong>{pendingTransactions.length} transaksi</strong> menunggu persetujuan. 
+              <strong>{transactions.length} transaksi</strong> menunggu persetujuan. 
               Periksa dengan teliti sebelum menyetujui.
             </div>
           </div>
@@ -76,7 +135,7 @@ const PendingApproval = ({ user }) => {
             </tr>
           </thead>
           <tbody className="divide-y divide-slate-100">
-            {pendingTransactions.length === 0 ? (
+            {transactions.length === 0 ? (
               <tr>
                 <td colSpan={6} className="px-6 py-12 text-center text-slate-400">
                   <div className="flex flex-col items-center gap-2">
@@ -86,13 +145,13 @@ const PendingApproval = ({ user }) => {
                 </td>
               </tr>
             ) : (
-              pendingTransactions.map(t => (
+              transactions.map(t => (
                 <tr key={t.id} className="hover:bg-slate-50 transition-colors">
                   <td className="px-6 py-4 whitespace-nowrap text-slate-600">{t.date}</td>
                   <td className="px-6 py-4">
-                    <span className="text-slate-700 font-medium">{t.createdBy}</span>
+                    <span className="text-slate-700 font-medium">{t.created_by}</span>
                     <div className="text-xs text-slate-400">
-                      {new Date(t.createdAt).toLocaleString('id-ID')}
+                      {new Date(t.created_at).toLocaleString('id-ID')}
                     </div>
                   </td>
                   <td className="px-6 py-4 font-medium text-slate-800 max-w-xs">
