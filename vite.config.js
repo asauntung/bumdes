@@ -4,5 +4,5 @@ import react from '@vitejs/plugin-react'
 // https://vitejs.dev/config/
 export default defineConfig({
   plugins: [react()],
-  base: '/bumdes/', // Nama repository di GitHub
+  base: '/', // Nama repository di GitHub
 })
