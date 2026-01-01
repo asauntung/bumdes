@@ -11,7 +11,7 @@ const PublicView = () => {
     }
   }, []);
 
-  // Refresh data setiap 30 detik
+  // Refresh data setiap 12 Jam
   useEffect(() => {
     const interval = setInterval(() => {
       const savedData = localStorage.getItem('bumdes_transactions');
@@ -267,7 +267,7 @@ const PublicView = () => {
         {/* Footer */}
         <div className="mt-8 text-center text-sm text-slate-500">
           <p>BUMDESa Margajaya - Sistem Keuangan Transparan</p>
-          <p className="mt-1">Data diperbarui otomatis setiap 30 detik</p>
+          <p className="mt-1">Data diperbarui otomatis setiap 12 Jam</p>
         </div>
       </div>
     </div>
